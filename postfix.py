@@ -50,9 +50,23 @@ def plugin_loaded():
     fixes = {}
 
   # Prepare snippets to use
+  snippet_stub = """
+  <snippet>
+    <content><![CDATA[empty]]></content>
+    <tabTrigger>.{}</tabTrigger>
+  </snippet>
+"""
+  snippets_dir = "/home/agent/.config/sublime-text/Packages/User/Snippets/"
   global postfixes
   postfixes = {}
   for scopes, rules in fixes.items():
+    os.system("mkdir -p " + snippets_dir)
+    for rule in rules:
+      snippet_path = snippets_dir + rule['cmd'] + '.sublime-snippet'
+      if not os.path.exists(snippet_path):
+        print(snippet_path)
+        with open(snippet_path, 'w') as f:
+          f.write(snippet_stub.format(rule['cmd']))
     for scope in scopes.split(' '):
       postfixes[scope] = rules
 
