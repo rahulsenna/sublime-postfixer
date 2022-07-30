@@ -22,53 +22,7 @@ def plugin_loaded():
   d = Dbg(settings)
 
   # Load postfixes
-  win = sublime.active_window()
-  win.run_command("reload_postfixes")
-
-  # Get default postfixes file
-  postfixes_str = ""
-  try:
-    postfixes_str = sublime.load_resource(DEFAULT_POSTFIXES_PATH)
-  except:
-    d.lg("Cannot load default postfixes file: " + DEFAULT_POSTFIXES_PATH)
-
-  # Get user's postfixes file or create new from default
-  fixes_path = os.path.join(sublime.packages_path(), "User/postfixes.yml")
-  if os.path.isfile(fixes_path):
-    with open(fixes_path) as f:
-      postfixes_str = f.read()
-  else:
-    with open(fixes_path, "w") as f:
-      f.write(postfixes_str)
-
-  # Parse snippets
-  fixes = None
-  try:
-    fixes = yaml.load(postfixes_str, Loader=yaml.Loader)
-  except:
-    d.lg("Cannot parse postfixes yaml")
-    fixes = {}
-
-  # Prepare snippets to use
-  snippet_stub = """
-  <snippet>
-    <content><![CDATA[empty]]></content>
-    <tabTrigger>.{}</tabTrigger>
-  </snippet>
-"""
-  snippets_dir = "/home/agent/.config/sublime-text/Packages/User/Snippets/"
-  global postfixes
-  postfixes = {}
-  for scopes, rules in fixes.items():
-    os.system("mkdir -p " + snippets_dir)
-    for rule in rules:
-      snippet_path = snippets_dir + rule['cmd'] + '.sublime-snippet'
-      if not os.path.exists(snippet_path):
-        print(snippet_path)
-        with open(snippet_path, 'w') as f:
-          f.write(snippet_stub.format(rule['cmd']))
-    for scope in scopes.split(' '):
-      postfixes[scope] = rules
+  init()
 
 class PostfixCommand(sublime_plugin.TextCommand):
 
@@ -179,6 +133,10 @@ class PostfixCommand(sublime_plugin.TextCommand):
 class ReloadPostfixesCommand(sublime_plugin.WindowCommand):
 
   def run(self):
+    init()
+
+
+def init():
     # Get default postfixes file
     postfixes_str = ""
     try:
@@ -203,10 +161,22 @@ class ReloadPostfixesCommand(sublime_plugin.WindowCommand):
       fixes = {}
 
     # Prepare snippets to use
+    snippet_stub = """
+    <snippet>
+      <content><![CDATA[empty]]></content>
+      <tabTrigger>.{}</tabTrigger>
+    </snippet>
+  """
+    snippets_dir = "/home/agent/.config/sublime-text/Packages/User/Snippets/"
     global postfixes
     postfixes = {}
     for scopes, rules in fixes.items():
+      os.system("mkdir -p " + snippets_dir)
+      for rule in rules:
+        snippet_path = snippets_dir + rule['cmd'] + '.sublime-snippet'
+        if not os.path.exists(snippet_path):
+          print(snippet_path)
+          with open(snippet_path, 'w') as f:
+            f.write(snippet_stub.format(rule['cmd']))
       for scope in scopes.split(' '):
         postfixes[scope] = rules
-
-    d.lg("Snippets (re)loaded")
