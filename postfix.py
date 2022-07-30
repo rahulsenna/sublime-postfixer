@@ -44,7 +44,7 @@ def plugin_loaded():
   # Parse snippets
   fixes = None
   try:
-    fixes = yaml.load(postfixes_str)
+    fixes = yaml.load(postfixes_str, Loader=yaml.Loader)
   except:
     d.lg("Cannot parse postfixes yaml")
     fixes = {}
@@ -110,9 +110,15 @@ class PostfixCommand(sublime_plugin.TextCommand):
 
       line_r = sublime.Region(self.view.line(r).begin(), r.b)
       try:
-        out, cursor = self.fix(scopefixes, self.view.substr(line_r))
+        out, cursor, on_line = self.fix(scopefixes, self.view.substr(line_r))
       except ValueError:
         continue
+
+      if not on_line:
+        line = self.view.substr(line_r)
+        words = line.replace('(', ' ').replace(')', ' ').replace('{', ' ').replace('}', ' ').split(' ')
+        word_region = sublime.Region(r.b - len(words[-1]), r.b)
+        line_r = word_region
       self.view.replace(edit, line_r, out)
       cursor = line_r.begin() + cursor
       cursors.append(sublime.Region(cursor, cursor))
@@ -137,8 +143,9 @@ class PostfixCommand(sublime_plugin.TextCommand):
         break
     if fix is None:
       raise ValueError("no_fix")
-
     # Render fix
+    if not fix['line']:
+      target = target.replace('(', ' ').replace(')', ' ').replace('{', ' ').replace('}', ' ').split(' ')[-1]
     target_match = re.match(fix['target'], target)
     if target_match is None:
       raise ValueError("no_fix")
@@ -151,10 +158,13 @@ class PostfixCommand(sublime_plugin.TextCommand):
     # Indent
     output = []
     nl = "\n"
-    if self.view.line_endings() == "Windows":
+    if self.view.line_endings() == "WindowsShit":
       nl = "\r\n"
     for rl in parsed.splitlines():
-      output.append(indent + rl)
+      if fix['line']:
+        output.append(indent + rl)
+      else:
+        output.append(rl)
     output = nl.join(output)
 
     # Get cursor index
@@ -163,7 +173,7 @@ class PostfixCommand(sublime_plugin.TextCommand):
       cursor_index = len(output)
     output = output.replace(VAR_CURSOR, "")
 
-    return (output, cursor_index)
+    return (output, cursor_index, fix['line'])
 
 
 class ReloadPostfixesCommand(sublime_plugin.WindowCommand):
@@ -187,7 +197,7 @@ class ReloadPostfixesCommand(sublime_plugin.WindowCommand):
 
     # Parse snippets
     try:
-      fixes = yaml.load(postfixes_str)
+      fixes = yaml.load(postfixes_str, Loader=yaml.Loader)
     except:
       d.lg("Cannot parse postfixes yaml")
       fixes = {}
