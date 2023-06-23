@@ -167,7 +167,7 @@ def init():
       <tabTrigger>.{}</tabTrigger>
     </snippet>
   """
-    snippets_dir = "/home/agent/.config/sublime-text/Packages/User/Snippets/"
+    snippets_dir = os.path.join(sublime.packages_path(),  "User/Snippets/")
     global postfixes
     postfixes = {}
     for scopes, rules in fixes.items():
