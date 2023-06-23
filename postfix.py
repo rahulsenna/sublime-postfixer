@@ -15,7 +15,7 @@ VAR_WHOLE = "$0"
 
 def plugin_loaded():
   # Get settings
-  settings = sublime.load_settings("Postfixer.sublime-settings")
+  settings = sublime.load_settings("Packages/Postfixer/Postfixer.sublime-settings")
 
   # Setup debug utils
   global d
@@ -171,7 +171,8 @@ def init():
     global postfixes
     postfixes = {}
     for scopes, rules in fixes.items():
-      os.system("mkdir -p " + snippets_dir)
+      if not os.path.exists(snippets_dir):
+          os.mkdir(snippets_dir)
       for rule in rules:
         snippet_path = snippets_dir + rule['cmd'] + '.sublime-snippet'
         if not os.path.exists(snippet_path):
